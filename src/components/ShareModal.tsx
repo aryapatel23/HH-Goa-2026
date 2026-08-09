@@ -188,7 +188,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             style={{ fontSize: '0.95rem', padding: '0.9rem' }}
           >
             <Share2 size={18} />
-            {typeof navigator !== 'undefined' && navigator.canShare ? 'Share Image Directly (Native)' : 'Open X / Twitter Post'}
+            {typeof navigator !== 'undefined' && typeof navigator.canShare === 'function' ? 'Share Image Directly (Native)' : 'Open X / Twitter Post'}
             <ExternalLink size={14} />
           </button>
 
