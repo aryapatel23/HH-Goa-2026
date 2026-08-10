@@ -55,102 +55,102 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className={`glass-panel ${cornerStyle === 'square' ? 'square-corners' : 'rounded-corners'} tech-corners`} style={{ padding: '1.2rem 1.5rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        
-        {/* Logo & 2:47 PM STUDIO Branding */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
-          <div style={{
-            background: 'var(--accent-yellow)',
-            border: '2px solid #fff',
-            padding: '0.4rem 0.7rem',
-            borderRadius: cornerStyle === 'square' ? '0px' : '6px',
-            boxShadow: '0 0 15px rgba(255, 229, 0, 0.4)',
-            color: '#043e24',
-            fontWeight: 900,
-            fontSize: '1rem',
-            fontFamily: 'var(--font-pixel)',
-            textAlign: 'center',
-            lineHeight: 1.1
-          }}>
-            2:47PM<br />STUDIO
-          </div>
-          
+    <header className={`glass-panel ${cornerStyle === 'square' ? 'square-corners' : 'rounded-corners'} tech-corners`} style={{ padding: '1rem 1.5rem' }}>
+
+      {/* ── Row 1: Branding + Mode Tabs + Actions ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.8rem' }}>
+
+        {/* Logo & Branding */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', flexShrink: 0 }}>
+          <a
+            href="https://hhgoa.com"
+            target="_blank"
+            rel="noreferrer"
+            title="Visit hhgoa.com"
+            style={{ textDecoration: 'none' }}
+          >
+            <div style={{
+              background: 'var(--accent-yellow)',
+              border: '2px solid #fff',
+              padding: '0.4rem 0.65rem',
+              borderRadius: cornerStyle === 'square' ? '0px' : '6px',
+              boxShadow: '0 0 18px rgba(255, 229, 0, 0.45)',
+              color: '#020c05',
+              fontWeight: 900,
+              fontSize: '0.95rem',
+              fontFamily: 'var(--font-pixel)',
+              textAlign: 'center',
+              lineHeight: 1.1,
+              cursor: 'pointer',
+            }}>
+              2:47PM<br />STUDIO
+            </div>
+          </a>
+
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <h1 style={{ fontSize: '1.5rem', fontWeight: 900, fontFamily: 'var(--font-serif)', color: 'var(--accent-yellow)', letterSpacing: '0.02em' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: '1.4rem', fontWeight: 900, fontFamily: 'var(--font-serif)', color: 'var(--accent-yellow)', letterSpacing: '0.02em', lineHeight: 1 }}>
                 HACKER HOUSE
               </h1>
-              <span className="hindi-badge" style={{ fontSize: '0.9rem' }}>
-                गोवा
-              </span>
-              <span className={`pill-tag ${cornerStyle === 'square' ? 'square' : 'rounded'}`} style={{ fontSize: '0.65rem' }}>
-                <Flame size={12} color="var(--accent-pink)" /> 28-31 OCT 2026
+              <span className="hindi-badge" style={{ fontSize: '0.85rem' }}>गोवा</span>
+              <span className={`pill-tag ${cornerStyle === 'square' ? 'square' : 'rounded'}`} style={{ fontSize: '0.62rem' }}>
+                <Flame size={11} color="var(--accent-pink)" /> 28–31 OCT 2026
               </span>
             </div>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-              GOA, INDIA  •  OFFICIAL BUILDER GRAPHIC GENERATOR
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', marginTop: '0.15rem', letterSpacing: '0.05em' }}>
+              GOA, INDIA &nbsp;·&nbsp; OFFICIAL BUILDER GRAPHIC GENERATOR
             </p>
           </div>
         </div>
 
         {/* Mode Switcher Tabs */}
-        <div className={`tab-switcher ${cornerStyle === 'square' ? 'square' : 'rounded'}`} style={{ minWidth: '400px' }}>
-          <button
-            className={`tab-btn ${mode === 'pfp' ? 'active' : ''}`}
-            onClick={() => handleModeChange('pfp')}
-          >
-            <Image size={16} /> PFP Frame
+        <div className={`tab-switcher ${cornerStyle === 'square' ? 'square' : 'rounded'} header-tabs`}>
+          <button className={`tab-btn ${mode === 'pfp' ? 'active' : ''}`} onClick={() => handleModeChange('pfp')}>
+            <Image size={15} /> PFP Frame
           </button>
-          <button
-            className={`tab-btn ${mode === 'idcard' ? 'active' : ''}`}
-            onClick={() => handleModeChange('idcard')}
-          >
-            <CreditCard size={16} /> Builder ID Card
+          <button className={`tab-btn ${mode === 'idcard' ? 'active' : ''}`} onClick={() => handleModeChange('idcard')}>
+            <CreditCard size={15} /> Builder ID
           </button>
-          <button
-            className={`tab-btn ${mode === 'story' ? 'active' : ''}`}
-            onClick={() => handleModeChange('story')}
-          >
-            <BookImage size={16} /> Story
+          <button className={`tab-btn ${mode === 'story' ? 'active' : ''}`} onClick={() => handleModeChange('story')}>
+            <BookImage size={15} /> Story
           </button>
         </div>
 
-        {/* Action Buttons: CHECK HYPE, VERIFY PASS, SOUND FX & HASHTAG */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           <button
             onClick={handleCheckHype}
             className={`btn btn-sunset ${cornerStyle === 'square' ? 'btn-square' : 'btn-rounded'}`}
-            style={{ padding: '0.5rem 0.9rem', fontSize: '0.8rem', gap: '0.35rem' }}
+            style={{ padding: '0.45rem 0.8rem', fontSize: '0.75rem', gap: '0.3rem' }}
           >
-            <Zap size={16} color="var(--accent-yellow)" /> CHECK HYPE
+            <Zap size={15} color="var(--accent-yellow)" /> CHECK HYPE
           </button>
 
           <button
             onClick={() => { playClickSound(); onOpenVerify(); }}
             className={`btn btn-primary ${cornerStyle === 'square' ? 'btn-square' : 'btn-rounded'}`}
-            style={{ padding: '0.5rem 0.9rem', fontSize: '0.8rem' }}
+            style={{ padding: '0.45rem 0.8rem', fontSize: '0.75rem' }}
           >
-            <ShieldCheck size={16} /> VERIFY PASS
+            <ShieldCheck size={15} /> VERIFY PASS
           </button>
 
           <button
             title={muted ? 'Unmute Synth Audio' : 'Mute Synth Audio'}
             onClick={handleSoundToggle}
             className={`btn btn-secondary ${cornerStyle === 'square' ? 'btn-square' : 'btn-rounded'}`}
-            style={{ padding: '0.55rem', fontSize: '0.8rem' }}
+            style={{ padding: '0.5rem', fontSize: '0.75rem' }}
           >
-            {muted ? <VolumeX size={16} color="#ff4d4d" /> : <Volume2 size={16} color="var(--accent-yellow)" />}
+            {muted ? <VolumeX size={15} color="#ff4d4d" /> : <Volume2 size={15} color="var(--accent-yellow)" />}
           </button>
 
           <button
-            title="Toggle Square / Sharp Corners"
+            title="Toggle Square / Rounded Corners"
             onClick={handleCornerChange}
             className={`btn btn-secondary ${cornerStyle === 'square' ? 'btn-square' : 'btn-rounded'}`}
-            style={{ padding: '0.5rem 0.8rem', fontSize: '0.8rem' }}
+            style={{ padding: '0.45rem 0.7rem', fontSize: '0.75rem' }}
           >
-            {cornerStyle === 'square' ? <Square size={16} color="var(--accent-yellow)" /> : <Circle size={16} />}
-            <span>Corners: <strong>{cornerStyle.toUpperCase()}</strong></span>
+            {cornerStyle === 'square' ? <Square size={15} color="var(--accent-yellow)" /> : <Circle size={15} />}
+            <span style={{ display: 'none' }} className="corner-label">Corners: <strong>{cornerStyle.toUpperCase()}</strong></span>
           </button>
 
           <a
@@ -158,25 +158,25 @@ export const Header: React.FC<HeaderProps> = ({
             target="_blank"
             rel="noreferrer"
             className={`btn btn-secondary ${cornerStyle === 'square' ? 'btn-square' : 'btn-rounded'}`}
-            style={{ padding: '0.5rem 0.8rem', fontSize: '0.8rem', gap: '0.35rem' }}
+            style={{ padding: '0.45rem 0.8rem', fontSize: '0.75rem', gap: '0.3rem' }}
           >
-            <Sparkles size={16} color="var(--accent-pink)" /> #FrameInGoa
+            <Sparkles size={15} color="var(--accent-pink)" /> #FrameInGoa
           </a>
         </div>
 
       </div>
 
-      {/* Theme Switcher Row */}
+      {/* ── Row 2: Theme Switcher ── */}
       <div style={{
-        marginTop: '0.9rem',
-        paddingTop: '0.8rem',
-        borderTop: '1px solid rgba(255,255,255,0.08)',
+        marginTop: '0.75rem',
+        paddingTop: '0.65rem',
+        borderTop: '1px solid rgba(255,255,255,0.07)',
         display: 'flex',
         alignItems: 'center',
-        gap: '0.5rem',
+        gap: '0.4rem',
         flexWrap: 'wrap',
       }}>
-        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>
+        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>
           Theme:
         </span>
         {(Object.entries(THEMES) as [Theme, (typeof THEMES)[Theme]][]).map(([key, t]) => {
@@ -187,25 +187,43 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => { playClickSound(); setTheme(key); }}
               title={t.label}
               style={{
-                display: 'flex', alignItems: 'center', gap: '0.4rem',
-                padding: '0.35rem 0.75rem',
-                background: isActive ? t.primary : 'rgba(255,255,255,0.05)',
-                color: isActive ? '#050d1f' : 'var(--text-main)',
-                border: `2px solid ${isActive ? t.primary : 'rgba(255,255,255,0.12)'}`,
-                borderRadius: cornerStyle === 'square' ? '0px' : '6px',
-                fontSize: '0.75rem', fontFamily: 'var(--font-mono)', fontWeight: 800,
+                display: 'flex', alignItems: 'center', gap: '0.35rem',
+                padding: '0.28rem 0.65rem',
+                background: isActive ? t.primary : 'rgba(255,255,255,0.04)',
+                color: isActive ? '#020c05' : 'var(--text-main)',
+                border: `1.5px solid ${isActive ? t.primary : 'rgba(255,255,255,0.10)'}`,
+                borderRadius: cornerStyle === 'square' ? '0px' : '5px',
+                fontSize: '0.7rem', fontFamily: 'var(--font-mono)', fontWeight: 800,
                 cursor: 'pointer', transition: 'all 0.15s ease',
                 textTransform: 'uppercase', letterSpacing: '0.04em',
-                boxShadow: isActive ? `0 0 14px ${t.primary}55` : 'none',
+                boxShadow: isActive ? `0 0 12px ${t.primary}44` : 'none',
               }}
             >
-              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: t.coral, border: `2px solid ${t.primary}`, flexShrink: 0 }} />
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isActive ? '#020c05' : t.coral, flexShrink: 0 }} />
               {t.emoji} {t.label}
-              {key === 'neon-shore' && <span style={{ fontSize: '0.6rem', opacity: 0.7 }}>(dark)</span>}
-              {key === 'emerald' && <span style={{ fontSize: '0.6rem', opacity: 0.7 }}>(classic)</span>}
+              {key === 'hhgoa' && <span style={{ fontSize: '0.58rem', opacity: 0.75 }}>(official)</span>}
             </button>
           );
         })}
+
+        {/* hhgoa.com link */}
+        <a
+          href="https://hhgoa.com"
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            marginLeft: 'auto',
+            fontSize: '0.68rem',
+            color: 'var(--text-muted)',
+            fontFamily: 'var(--font-mono)',
+            textDecoration: 'none',
+            opacity: 0.7,
+            letterSpacing: '0.04em',
+            flexShrink: 0,
+          }}
+        >
+          hhgoa.com ↗
+        </a>
       </div>
 
     </header>

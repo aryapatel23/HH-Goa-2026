@@ -1,6 +1,6 @@
 export type Mode = 'pfp' | 'idcard' | 'story';
 
-export type Theme = 'neon-shore' | 'emerald' | 'sunset' | 'cyber';
+export type Theme = 'hhgoa' | 'neon-shore' | 'emerald' | 'sunset' | 'cyber';
 
 export interface ThemeColors {
   bg: string;
@@ -14,6 +14,11 @@ export interface ThemeColors {
 }
 
 export const THEMES: Record<Theme, ThemeColors> = {
+  'hhgoa': {
+    bg: '#0d4a1a', bgDeep: '#083512', bgCard: 'rgba(10,58,20,0.92)',
+    primary: '#ffe500', coral: '#ff007f', teal: '#ffffff',
+    label: 'HH GOA', emoji: '🌴',
+  },
   'neon-shore': {
     bg: '#050d1f', bgDeep: '#030810', bgCard: 'rgba(8,18,40,0.92)',
     primary: '#ffcc00', coral: '#ff4d00', teal: '#00d4c8',
@@ -63,7 +68,7 @@ export interface FrameTemplate {
   badgeLabel: string;
 }
 
-export type IDCardStyleId = 'classic-dark' | 'editorial-light' | 'terminal-hacker' | 'magazine-cover';
+export type IDCardStyleId = 'classic-dark' | 'editorial-light' | 'terminal-hacker' | 'magazine-cover' | 'goa-resort' | 'sunset-beach';
 
 export interface IDCardStyle {
   id: IDCardStyleId;

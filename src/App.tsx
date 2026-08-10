@@ -27,11 +27,11 @@ export const App: React.FC = () => {
   const [mode, setMode] = useState<Mode>('pfp');
   const [cornerStyle, setCornerStyle] = useState<CornerStyle>('square');
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>('upload');
-  const [theme, setTheme] = useState<Theme>('neon-shore');
+  const [theme, setTheme] = useState<Theme>('hhgoa');
 
   // Apply theme class to body so CSS variable overrides work
   useEffect(() => {
-    document.body.className = theme === 'neon-shore' ? '' : `theme-${theme}`;
+    document.body.className = `theme-${theme}`;
     return () => { document.body.className = ''; };
   }, [theme]);
 
@@ -58,7 +58,7 @@ export const App: React.FC = () => {
   });
 
   const [frameTemplate, setFrameTemplate] = useState<FrameTemplateId>('studio-emerald');
-  const [cardStyle, setCardStyle] = useState<IDCardStyleId>('classic-dark');
+  const [cardStyle, setCardStyle] = useState<IDCardStyleId>('goa-resort');
 
   const [cardData, setCardData] = useState<IDCardData>({
     fullName: 'Alex Rivera',
@@ -287,30 +287,47 @@ export const App: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '1rem',
-          fontSize: '0.8rem',
-          color: 'var(--text-muted)'
+          gap: '0.75rem',
+          fontSize: '0.75rem',
+          color: 'var(--text-muted)',
+          marginTop: '0.5rem',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Zap size={16} color="var(--accent-yellow)" />
-          <span>2:47 PM STUDIO x HACKER HOUSE GOA 2026 — Official Builder Generator</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <Zap size={14} color="var(--accent-yellow)" />
+          <span style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
+            2:47 PM STUDIO × HACKER HOUSE GOA 2026
+          </span>
+          <span style={{ opacity: 0.45 }}>·</span>
+          <span style={{ fontStyle: 'italic', opacity: 0.65 }}>Less Noise. More Signal.</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <a
+            href="https://hhgoa.com"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: 'var(--accent-yellow)', textDecoration: 'none', fontFamily: 'var(--font-mono)', fontWeight: 700, letterSpacing: '0.04em' }}
+          >
+            hhgoa.com ↗
+          </a>
           <button
             onClick={() => { setVerifyQuery('HH-GOA-2026-A89F-8842'); setVerifyModalOpen(true); }}
             style={{
-              background: 'none', border: 'none', color: 'var(--accent-yellow)', cursor: 'pointer',
-              fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem',
-              fontFamily: 'var(--font-mono)', fontWeight: 700
+              background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
+              fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem',
+              fontFamily: 'var(--font-mono)',
             }}
           >
-            <ShieldCheck size={14} color="var(--accent-yellow)" /> Verify Pass Authenticity
+            <ShieldCheck size={13} color="var(--text-muted)" /> Verify Pass
           </button>
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-            <Flame size={14} color="var(--accent-pink)" /> Hashtag: <strong>#FrameInGoa</strong>
+            <Flame size={13} color="var(--accent-pink)" />
+            <a href="https://x.com/search?q=%23FrameInGoa" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none', fontFamily: 'var(--font-mono)' }}>
+              #FrameInGoa
+            </a>
           </span>
+          <span style={{ opacity: 0.5, fontFamily: 'var(--font-mono)' }}>GOA, INDIA · 28–31 OCT 2026</span>
         </div>
       </footer>
 

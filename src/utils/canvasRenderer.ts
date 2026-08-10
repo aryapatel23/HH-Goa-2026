@@ -4,9 +4,91 @@ import { STICKER_LIST } from '../components/StickerSelector';
 import QRCode from 'qrcode';
 import { encodeVerificationUrl } from './verifier';
 
+// ── Module-level Goa background image cache ──────────────────────────────────
+// Images start loading as soon as this module is imported.
+const _goaBg: { landscape: HTMLImageElement | null; portrait: HTMLImageElement | null } = {
+  landscape: null,
+  portrait: null,
+};
+
+if (typeof window !== 'undefined') {
+  const ls = new Image(); ls.crossOrigin = 'anonymous'; ls.src = '/goa-bg.jpg';
+  const pt = new Image(); pt.crossOrigin = 'anonymous'; pt.src = '/goa-bg-portrait.jpg';
+  _goaBg.landscape = ls;
+  _goaBg.portrait  = pt;
+}
+
+/**
+ * Call this once on mount; fires callback when either Goa image finishes loading.
+ * Useful so PreviewCanvas can trigger a re-draw once images are ready.
+ */
+export function onGoaBgReady(cb: () => void): void {
+  const imgs = [_goaBg.landscape, _goaBg.portrait].filter(Boolean) as HTMLImageElement[];
+  const pending = imgs.filter(img => !img.complete);
+  if (pending.length === 0) { cb(); return; }
+  let done = 0;
+  pending.forEach(img => {
+    const prev = img.onload as ((e: Event) => void) | null;
+    img.onload = (e: Event) => {
+      if (prev) prev(e);
+      done++;
+      if (done >= pending.length) cb();
+    };
+  });
+}
+
+function getGoaBg(portrait = false): HTMLImageElement | null {
+  const img = portrait ? _goaBg.portrait : _goaBg.landscape;
+  if (img && img.complete && img.naturalWidth > 0) return img;
+  return null;
+}
+
+/** Draw an image cover-fit into a rectangle (like CSS background-size: cover). */
+function drawCoverImage(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  x: number, y: number, w: number, h: number
+) {
+  const iw = img.naturalWidth || img.width;
+  const ih = img.naturalHeight || img.height;
+  if (!iw || !ih) return;
+  const scale = Math.max(w / iw, h / ih);
+  const dw = iw * scale;
+  const dh = ih * scale;
+  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+}
+
+/** Realistic beach fill + optional dark overlay for readable UI/text. */
+function drawRealisticGoaBg(
+  ctx: CanvasRenderingContext2D,
+  w: number, h: number,
+  opts?: { portrait?: boolean; overlay?: string; overlayAlpha?: number }
+) {
+  const portrait = opts?.portrait ?? h > w;
+  const img = getGoaBg(portrait) || getGoaBg(!portrait);
+  if (img) {
+    drawCoverImage(ctx, img, 0, 0, w, h);
+  } else {
+    // Fallback while image loads
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#0a3d16');
+    g.addColorStop(0.45, '#155c24');
+    g.addColorStop(1, '#0a2e12');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+  }
+  if (opts?.overlay) {
+    ctx.save();
+    ctx.globalAlpha = opts.overlayAlpha ?? 0.55;
+    ctx.fillStyle = opts.overlay;
+    ctx.fillRect(0, 0, w, h);
+    ctx.restore();
+  }
+}
+
 // Resolved at render time from the active theme
 function getTheme(theme?: Theme): ThemeColors {
-  return THEMES[theme ?? 'neon-shore'];
+  return THEMES[theme ?? 'hhgoa'];
 }
 
 export interface RenderOptions {
@@ -56,27 +138,41 @@ function renderPfpFrame(
   canvas.height = size;
   ctx.clearRect(0, 0, size, size);
 
-  ctx.fillStyle = T.bg;
-  ctx.fillRect(0, 0, size, size);
+  const isGoa = opts.theme === 'hhgoa' || !opts.theme;
+  const frameInset = isGoa ? 110 : 0;
+
+  // Realistic beach as outer frame (or solid theme bg)
+  if (isGoa) {
+    drawRealisticGoaBg(ctx, size, size, { portrait: false, overlay: '#062010', overlayAlpha: 0.35 });
+  } else {
+    ctx.fillStyle = T.bg;
+    ctx.fillRect(0, 0, size, size);
+  }
 
   if (opts.image) {
     ctx.save();
     if (opts.cornerStyle === 'rounded') {
       const radius = 240;
+      const inset = frameInset;
       ctx.beginPath();
-      ctx.moveTo(radius, 0);
-      ctx.lineTo(size - radius, 0);
-      ctx.quadraticCurveTo(size, 0, size, radius);
-      ctx.lineTo(size, size - radius);
-      ctx.quadraticCurveTo(size, size, size - radius, size);
-      ctx.lineTo(radius, size);
-      ctx.quadraticCurveTo(0, size, 0, size - radius);
-      ctx.lineTo(0, radius);
-      ctx.quadraticCurveTo(0, 0, radius, 0);
+      ctx.moveTo(inset + radius, inset);
+      ctx.lineTo(size - inset - radius, inset);
+      ctx.quadraticCurveTo(size - inset, inset, size - inset, inset + radius);
+      ctx.lineTo(size - inset, size - inset - radius);
+      ctx.quadraticCurveTo(size - inset, size - inset, size - inset - radius, size - inset);
+      ctx.lineTo(inset + radius, size - inset);
+      ctx.quadraticCurveTo(inset, size - inset, inset, size - inset - radius);
+      ctx.lineTo(inset, inset + radius);
+      ctx.quadraticCurveTo(inset, inset, inset + radius, inset);
       ctx.closePath();
+      ctx.clip();
+    } else if (frameInset > 0) {
+      ctx.beginPath();
+      ctx.rect(frameInset, frameInset, size - frameInset * 2, size - frameInset * 2);
       ctx.clip();
     }
     applyFilters(ctx, opts.adjustments);
+    const photoSize = size - frameInset * 2;
     const cx = size / 2 + opts.adjustments.panX * 2;
     const cy = size / 2 + opts.adjustments.panY * 2;
     ctx.translate(cx, cy);
@@ -85,12 +181,26 @@ function renderPfpFrame(
     const imgWidth = opts.image.naturalWidth || opts.image.width;
     const imgHeight = opts.image.naturalHeight || opts.image.height;
     const aspect = imgWidth / imgHeight;
-    let drawW = size, drawH = size;
-    if (aspect > 1) { drawW = size * aspect; } else { drawH = size / aspect; }
+    let drawW = photoSize, drawH = photoSize;
+    if (aspect > 1) { drawW = photoSize * aspect; } else { drawH = photoSize / aspect; }
     ctx.drawImage(opts.image, -drawW / 2, -drawH / 2, drawW, drawH);
     ctx.restore();
+
+    // Gold/pink photo rim for Goa realistic frame
+    if (frameInset > 0) {
+      ctx.strokeStyle = T.primary;
+      ctx.lineWidth = 10;
+      ctx.strokeRect(frameInset - 5, frameInset - 5, photoSize + 10, photoSize + 10);
+      ctx.strokeStyle = T.coral;
+      ctx.lineWidth = 4;
+      ctx.strokeRect(frameInset + 4, frameInset + 4, photoSize - 8, photoSize - 8);
+    }
   } else {
-    drawPlaceholderBackground(ctx, size, size, 0, 0, T);
+    if (frameInset > 0) {
+      ctx.fillStyle = 'rgba(6,32,16,0.55)';
+      ctx.fillRect(frameInset, frameInset, size - frameInset * 2, size - frameInset * 2);
+    }
+    drawPlaceholderBackground(ctx, size - frameInset * 2, size - frameInset * 2, frameInset, frameInset, T);
   }
 
   drawFrameOverlay(ctx, size, opts.frameTemplate, opts.cornerStyle, opts.adjustments.customColor, T);
@@ -135,7 +245,7 @@ function drawFrameOverlay(
   customColor?: string,
   T?: ThemeColors
 ) {
-  const theme = T ?? THEMES['neon-shore'];
+  const theme = T ?? THEMES['hhgoa'];
   ctx.save();
   ctx.filter = 'none';
   const isSquare = cornerStyle === 'square';
@@ -211,7 +321,7 @@ function drawNeonShoreFrame(
   template?: FrameTemplateId,
   T?: ThemeColors
 ) {
-  const theme = T ?? THEMES['neon-shore'];
+  const theme = T ?? THEMES['hhgoa'];
   const gold = customColor || theme.primary;
   const coral = template === 'neon-sunset' ? (customColor || theme.teal) : theme.coral;
 
@@ -319,7 +429,7 @@ function drawRibbonPattern(
   x: number, y: number, w: number, h: number,
   T?: ThemeColors
 ) {
-  const theme = T ?? THEMES['neon-shore'];
+  const theme = T ?? THEMES['hhgoa'];
   ctx.save();
   ctx.fillStyle = theme.coral;
   ctx.fillRect(x, y, w, h);
@@ -340,11 +450,450 @@ function renderIdCard(
   opts: RenderOptions
 ) {
   switch (opts.cardStyle) {
-    case 'editorial-light':  renderEditorialCard(canvas, ctx, opts); break;
-    case 'terminal-hacker':  renderTerminalCard(canvas, ctx, opts);  break;
-    case 'magazine-cover':   renderMagazineCover(canvas, ctx, opts); break;
-    default:                 renderClassicCard(canvas, ctx, opts);   break;
+    case 'goa-resort':       renderGoaResortCard(canvas, ctx, opts);  break;
+    case 'sunset-beach':     renderSunsetBeachCard(canvas, ctx, opts); break;
+    case 'editorial-light':  renderEditorialCard(canvas, ctx, opts);  break;
+    case 'terminal-hacker':  renderTerminalCard(canvas, ctx, opts);   break;
+    case 'magazine-cover':   renderMagazineCover(canvas, ctx, opts);  break;
+    default:                 renderClassicCard(canvas, ctx, opts);    break;
   }
+}
+
+// ══ Style: GOA RESORT (hhgoa.com — forest green + yellow + hot pink) ═══════════
+function renderGoaResortCard(
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D,
+  opts: RenderOptions
+) {
+  const W = 1200, H = 1800;
+  canvas.width = W;
+  canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+  ctx.save();
+
+  const YELLOW = '#ffe500';
+  const PINK   = '#ff007f';
+  const GREEN  = '#0d4a1a';
+  const GREEN2 = '#155c24';
+  const WHITE  = '#ffffff';
+
+  // Realistic Goa beach photo background
+  drawRealisticGoaBg(ctx, W, H, { portrait: true, overlay: '#062810', overlayAlpha: 0.58 });
+
+  // Soft vignette for depth
+  const vig = ctx.createRadialGradient(W / 2, H * 0.35, 80, W / 2, H * 0.4, H * 0.75);
+  vig.addColorStop(0, 'rgba(0,0,0,0)');
+  vig.addColorStop(1, 'rgba(0,0,0,0.45)');
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, W, H);
+
+  // Top readability band
+  const topBand = ctx.createLinearGradient(0, 0, 0, 420);
+  topBand.addColorStop(0, 'rgba(6,40,16,0.92)');
+  topBand.addColorStop(1, 'rgba(6,40,16,0)');
+  ctx.fillStyle = topBand;
+  ctx.fillRect(0, 0, W, 420);
+
+  // Bottom readability band
+  const botBand = ctx.createLinearGradient(0, H * 0.42, 0, H);
+  botBand.addColorStop(0, 'rgba(6,40,16,0)');
+  botBand.addColorStop(0.25, 'rgba(6,40,16,0.72)');
+  botBand.addColorStop(1, 'rgba(4,28,12,0.94)');
+  ctx.fillStyle = botBand;
+  ctx.fillRect(0, H * 0.42, W, H * 0.58);
+
+  // ── Top header strip ──
+  ctx.fillStyle = YELLOW;
+  ctx.fillRect(0, 0, W, 8);
+  ctx.fillStyle = PINK;
+  ctx.fillRect(0, 8, W, 4);
+
+  // ── "2:47PM STUDIO" top-left badge ──
+  ctx.fillStyle = YELLOW;
+  ctx.font = 'bold 28px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('2:47PM', 40, 65);
+  ctx.font = 'bold 22px monospace';
+  ctx.fillText('STUDIO', 40, 93);
+
+  // ── "HACKER HOUSE" large title ──
+  ctx.textAlign = 'center';
+  ctx.fillStyle = YELLOW;
+  ctx.font = `900 ${W * 0.10}px serif`;
+  ctx.fillText('HACKER', W / 2, 185);
+  ctx.fillText('HOUSE', W / 2, 295);
+
+  // ── "गोवा" pink badge ──
+  const goadBadgeW = 210, goadBadgeH = 70;
+  const goadX = W / 2 - goadBadgeW / 2, goadY = 180;
+  ctx.save();
+  ctx.translate(goadX + goadBadgeW / 2, goadY + goadBadgeH / 2);
+  ctx.rotate(-0.08);
+  ctx.fillStyle = PINK;
+  ctx.fillRect(-goadBadgeW / 2, -goadBadgeH / 2, goadBadgeW, goadBadgeH);
+  ctx.strokeStyle = YELLOW;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(-goadBadgeW / 2, -goadBadgeH / 2, goadBadgeW, goadBadgeH);
+  ctx.fillStyle = YELLOW;
+  ctx.font = 'bold 46px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('गोवा', 0, 0);
+  ctx.textBaseline = 'alphabetic';
+  ctx.restore();
+
+  // ── "GOA, INDIA · 28–31 OCT 2026" sub-line ──
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.font = '500 32px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('GOA, INDIA  ·  28 – 31 OCT 2026', W / 2, 340);
+
+  // ── Yellow divider ──
+  ctx.fillStyle = YELLOW;
+  ctx.fillRect(80, 365, W - 160, 3);
+  ctx.fillStyle = PINK;
+  ctx.fillRect(80, 368, W - 160, 1.5);
+
+  // ── Photo circle ──
+  const photoSize = 360;
+  const photoX = W / 2;
+  const photoY = 580;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(photoX, photoY, photoSize / 2 + 6, 0, Math.PI * 2);
+  ctx.fillStyle = YELLOW;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(photoX, photoY, photoSize / 2 + 2, 0, Math.PI * 2);
+  ctx.fillStyle = PINK;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(photoX, photoY, photoSize / 2, 0, Math.PI * 2);
+  ctx.clip();
+  if (opts.image) {
+    const img = opts.image;
+    const adj = opts.adjustments;
+    const d = photoSize;
+    const sx = W / 2 - d / 2 - adj.panX;
+    const sy = photoY - d / 2 - adj.panY;
+    ctx.save();
+    ctx.translate(W / 2, photoY);
+    ctx.rotate((adj.rotation * Math.PI) / 180);
+    ctx.scale(adj.zoom, adj.zoom);
+    ctx.drawImage(img, -d / 2 - adj.panX, -d / 2 - adj.panY, d, d);
+    ctx.restore();
+    void sx; void sy;
+  } else {
+    ctx.fillStyle = GREEN2;
+    ctx.fillRect(photoX - photoSize / 2, photoY - photoSize / 2, photoSize, photoSize);
+    ctx.fillStyle = YELLOW;
+    ctx.font = 'bold 80px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🌴', photoX, photoY);
+    ctx.textBaseline = 'alphabetic';
+  }
+  ctx.restore();
+
+  // ── Name & Handle ──
+  ctx.textAlign = 'center';
+  ctx.fillStyle = YELLOW;
+  ctx.font = `900 72px serif`;
+  ctx.fillText(opts.cardData.fullName || 'YOUR NAME', W / 2, 800);
+  ctx.fillStyle = PINK;
+  ctx.font = 'bold 40px monospace';
+  ctx.fillText(opts.cardData.handle || '@handle', W / 2, 850);
+
+  // ── Pink divider ──
+  ctx.fillStyle = PINK;
+  ctx.fillRect(80, 875, W - 160, 2);
+
+  // ── Info rows ──
+  const infoItems: [string, string][] = [
+    ['ROLE', opts.cardData.role || 'Builder'],
+    ['STACK', opts.cardData.stack || 'Web3 · TS · React'],
+    ['BUILDER CLASS', opts.cardData.builderTitle || '2:47 PM SHIPPER ⚡'],
+    ['STATUS', opts.cardData.statusBadge || 'SHORTLISTED'],
+    ['LOCATION', opts.cardData.location || 'Goa, India'],
+  ];
+  let infoY = 950;
+  infoItems.forEach(([label, value]) => {
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = '600 28px monospace';
+    ctx.fillText(label, 80, infoY);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = WHITE;
+    ctx.font = '700 32px sans-serif';
+    ctx.fillText(value, W - 80, infoY);
+    ctx.fillStyle = 'rgba(255,229,0,0.15)';
+    ctx.fillRect(80, infoY + 5, W - 160, 1);
+    infoY += 80;
+  });
+
+  // ── Hacker ID badge ──
+  const hackerId = opts.cardData.hackerId || 'HH-GOA-2026-XXXX';
+  const idBadgeY = infoY + 30;
+  ctx.fillStyle = YELLOW;
+  ctx.fillRect(80, idBadgeY, W - 160, 70);
+  ctx.fillStyle = GREEN;
+  ctx.font = 'bold 36px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`ID: ${hackerId}`, W / 2, idBadgeY + 45);
+
+  // ── QR code ──
+  const qrVerifyUrl = encodeVerificationUrl(opts.cardData);
+  const qrSize = 200;
+  const qrX2 = W / 2 - qrSize / 2;
+  const qrY2 = idBadgeY + 90;
+  QRCode.toDataURL(qrVerifyUrl, {
+    width: qrSize, margin: 1, color: { dark: GREEN, light: YELLOW }
+  }).then((qrDataUrl: string) => {
+    const qrImg = new Image();
+    qrImg.onload = () => {
+      const qrCtx = canvas.getContext('2d');
+      if (!qrCtx) return;
+      qrCtx.fillStyle = YELLOW;
+      qrCtx.fillRect(qrX2 - 6, qrY2 - 6, qrSize + 12, qrSize + 12);
+      qrCtx.drawImage(qrImg, qrX2, qrY2, qrSize, qrSize);
+    };
+    qrImg.src = qrDataUrl;
+  });
+
+  // ── Bottom strip ──
+  ctx.fillStyle = PINK;
+  ctx.fillRect(0, H - 8, W, 8);
+  ctx.fillStyle = YELLOW;
+  ctx.fillRect(0, H - 12, W, 4);
+
+  // ── "SCAN TO VERIFY" label ──
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.font = '500 24px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('SCAN TO VERIFY  ·  #FrameInGoa', W / 2, H - 25);
+
+  ctx.restore();
+}
+
+// ══ Style: SUNSET BEACH (warm orange-pink sunset gradient — resort coder vibes) ═════════
+function renderSunsetBeachCard(
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D,
+  opts: RenderOptions
+) {
+  const W = 1200, H = 1800;
+  canvas.width = W;
+  canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+  ctx.save();
+
+  const YELLOW = '#ffe500';
+  const ORANGE = '#ff6b1a';
+  const PINK   = '#ff007f';
+  const DEEP   = '#0d0a1a';
+  const WHITE  = '#ffffff';
+
+  // Realistic sunset beach photo (landscape scene, cover-fit)
+  drawRealisticGoaBg(ctx, W, H, { portrait: false, overlay: '#1a0800', overlayAlpha: 0.42 });
+
+  // Warm sunset color wash
+  const wash = ctx.createLinearGradient(0, 0, 0, H);
+  wash.addColorStop(0, 'rgba(20,8,30,0.55)');
+  wash.addColorStop(0.45, 'rgba(120,40,0,0.25)');
+  wash.addColorStop(1, 'rgba(255,80,0,0.35)');
+  ctx.fillStyle = wash;
+  ctx.fillRect(0, 0, W, H);
+
+  // Top readability band
+  const topBand = ctx.createLinearGradient(0, 0, 0, 400);
+  topBand.addColorStop(0, 'rgba(12,4,20,0.9)');
+  topBand.addColorStop(1, 'rgba(12,4,20,0)');
+  ctx.fillStyle = topBand;
+  ctx.fillRect(0, 0, W, 400);
+
+  // Bottom readability band
+  const botBand = ctx.createLinearGradient(0, H * 0.4, 0, H);
+  botBand.addColorStop(0, 'rgba(20,6,0,0)');
+  botBand.addColorStop(0.3, 'rgba(30,10,0,0.7)');
+  botBand.addColorStop(1, 'rgba(18,6,0,0.92)');
+  ctx.fillStyle = botBand;
+  ctx.fillRect(0, H * 0.4, W, H * 0.6);
+
+  // ── Top yellow bar ──
+  ctx.fillStyle = YELLOW;
+  ctx.fillRect(0, 0, W, 10);
+  ctx.fillStyle = PINK;
+  ctx.fillRect(0, 10, W, 4);
+
+  // ── "2:47PM" badge ──
+  ctx.fillStyle = YELLOW;
+  ctx.font = 'bold 26px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('2:47PM STUDIO', 40, 62);
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.font = '500 22px monospace';
+  ctx.fillText('SUNSET EDITION', 40, 90);
+
+  // ── Event badge ──
+  ctx.fillStyle = PINK;
+  ctx.font = 'bold 24px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('GOA · OCT 2026', W - 40, 62);
+
+  // ── Big HACKER HOUSE heading ──
+  ctx.textAlign = 'center';
+  ctx.fillStyle = YELLOW;
+  ctx.font = `900 ${W * 0.095}px serif`;
+  ctx.shadowColor = 'rgba(255,200,0,0.4)';
+  ctx.shadowBlur = 24;
+  ctx.fillText('HACKER', W / 2, 185);
+  ctx.fillText('HOUSE', W / 2, 285);
+  ctx.shadowBlur = 0;
+
+  // ── Pink गोवा stamp ──
+  ctx.save();
+  ctx.translate(W / 2, 225);
+  ctx.rotate(-0.06);
+  ctx.fillStyle = PINK;
+  ctx.font = 'bold 54px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('गोवा', 0, 0);
+  ctx.textBaseline = 'alphabetic';
+  ctx.restore();
+
+  // ── Sub-line ──
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.font = '500 30px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('GOA, INDIA  ·  28 – 31 OCT 2026', W / 2, 330);
+
+  // ── Divider ──
+  ctx.fillStyle = ORANGE;
+  ctx.fillRect(80, 350, W - 160, 3);
+
+  // ── Profile photo ──
+  const photoR = 190;
+  const photoX = W / 2;
+  const photoY = 520;
+  ctx.save();
+  // Glow ring
+  const ring = ctx.createRadialGradient(photoX, photoY, photoR - 10, photoX, photoY, photoR + 18);
+  ring.addColorStop(0, ORANGE);
+  ring.addColorStop(0.5, PINK);
+  ring.addColorStop(1, 'transparent');
+  ctx.fillStyle = ring;
+  ctx.beginPath();
+  ctx.arc(photoX, photoY, photoR + 18, 0, Math.PI * 2);
+  ctx.fill();
+  // clip to circle
+  ctx.beginPath();
+  ctx.arc(photoX, photoY, photoR, 0, Math.PI * 2);
+  ctx.clip();
+  if (opts.image) {
+    const img = opts.image;
+    const adj = opts.adjustments;
+    const d = photoR * 2;
+    ctx.save();
+    ctx.translate(photoX, photoY);
+    ctx.rotate((adj.rotation * Math.PI) / 180);
+    ctx.scale(adj.zoom, adj.zoom);
+    ctx.drawImage(img, -d / 2 - adj.panX, -d / 2 - adj.panY, d, d);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = '#1a0828';
+    ctx.fillRect(photoX - photoR, photoY - photoR, photoR * 2, photoR * 2);
+    ctx.fillStyle = YELLOW;
+    ctx.font = 'bold 72px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🌅', photoX, photoY);
+    ctx.textBaseline = 'alphabetic';
+  }
+  ctx.restore();
+
+  // ── Name ──
+  ctx.textAlign = 'center';
+  ctx.fillStyle = YELLOW;
+  ctx.font = `900 68px serif`;
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = 12;
+  ctx.fillText(opts.cardData.fullName || 'YOUR NAME', W / 2, 770);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = PINK;
+  ctx.font = 'bold 38px monospace';
+  ctx.fillText(opts.cardData.handle || '@handle', W / 2, 818);
+
+  // ── Divider ──
+  const divGrad = ctx.createLinearGradient(80, 0, W - 80, 0);
+  divGrad.addColorStop(0, 'transparent');
+  divGrad.addColorStop(0.5, ORANGE);
+  divGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = divGrad;
+  ctx.fillRect(80, 840, W - 160, 2);
+
+  // ── Info rows ──
+  const infoRows: [string, string][] = [
+    ['ROLE', opts.cardData.role || 'Builder'],
+    ['STACK', opts.cardData.stack || 'Web3 · TS · React'],
+    ['BUILDER CLASS', opts.cardData.builderTitle || '2:47 PM SHIPPER ⚡'],
+    ['STATUS', opts.cardData.statusBadge || 'SHORTLISTED'],
+  ];
+  let rowY = 910;
+  infoRows.forEach(([lbl, val]) => {
+    // row bg
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(60, rowY - 38, W - 120, 56);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = ORANGE;
+    ctx.font = '600 26px monospace';
+    ctx.fillText(lbl, 80, rowY);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = WHITE;
+    ctx.font = '700 30px sans-serif';
+    ctx.fillText(val, W - 80, rowY);
+    rowY += 72;
+  });
+
+  // ── Hacker ID ──
+  const idY = rowY + 30;
+  ctx.fillStyle = YELLOW;
+  ctx.fillRect(60, idY, W - 120, 60);
+  ctx.fillStyle = DEEP;
+  ctx.font = 'bold 32px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`⚡ ${opts.cardData.hackerId || 'HH-GOA-2026-XXXX'} ⚡`, W / 2, idY + 40);
+
+  // ── QR code ──
+  const qrS = 180;
+  const qrX = W / 2 - qrS / 2;
+  const qrYy = idY + 75;
+  const qrVerifyUrl2 = encodeVerificationUrl(opts.cardData);
+  QRCode.toDataURL(qrVerifyUrl2, {
+    width: qrS, margin: 1, color: { dark: DEEP, light: YELLOW }
+  }).then((qrDataUrl: string) => {
+    const qrImg = new Image();
+    qrImg.onload = () => {
+      const qrCtx = canvas.getContext('2d');
+      if (!qrCtx) return;
+      qrCtx.fillStyle = YELLOW;
+      qrCtx.fillRect(qrX - 4, qrYy - 4, qrS + 8, qrS + 8);
+      qrCtx.drawImage(qrImg, qrX, qrYy, qrS, qrS);
+    };
+    qrImg.src = qrDataUrl;
+  });
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.font = '500 22px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('SCAN TO VERIFY', W / 2, qrYy + qrS + 28);
+
+  // ── Bottom strip ──
+  ctx.fillStyle = ORANGE;
+  ctx.fillRect(0, H - 10, W, 10);
+  ctx.fillStyle = PINK;
+  ctx.fillRect(0, H - 14, W, 4);
+
+  ctx.restore();
 }
 
 // ── Style 1: CLASSIC DARK (original navy + gold + coral) ────────────────
@@ -1145,23 +1694,26 @@ function renderStoryCard(
   const gold = opts.adjustments.customColor || T.primary;
   const coral = T.coral;
   const teal = T.teal;
+  const isGoa = opts.theme === 'hhgoa' || !opts.theme;
 
-  // Background
-  ctx.fillStyle = T.bg;
-  ctx.fillRect(0, 0, W, H);
-
-  // Diagonal grid lines
-  ctx.save();
-  ctx.globalAlpha = 0.035;
-  ctx.strokeStyle = teal;
-  ctx.lineWidth = 1;
-  for (let i = -H; i < W + H; i += 80) {
-    ctx.beginPath();
-    ctx.moveTo(i, 0);
-    ctx.lineTo(i + H, H);
-    ctx.stroke();
+  // Realistic Goa beach as full story background
+  if (isGoa) {
+    drawRealisticGoaBg(ctx, W, H, { portrait: true, overlay: '#04180c', overlayAlpha: 0.45 });
+  } else {
+    ctx.fillStyle = T.bg;
+    ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    ctx.globalAlpha = 0.035;
+    ctx.strokeStyle = teal;
+    ctx.lineWidth = 1;
+    for (let i = -H; i < W + H; i += 80) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i + H, H);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
-  ctx.restore();
 
   // Center photo with fade at bottom
   if (opts.image) {
@@ -1170,7 +1722,8 @@ function renderStoryCard(
     ctx.beginPath();
     ctx.rect(0, 0, W, photoAreaH);
     ctx.clip();
-    applyFilters(ctx, opts.adjustments);    const cx = W / 2 + opts.adjustments.panX * 2;
+    applyFilters(ctx, opts.adjustments);
+    const cx = W / 2 + opts.adjustments.panX * 2;
     const cy = photoAreaH / 2 + opts.adjustments.panY * 2;
     ctx.translate(cx, cy);
     ctx.rotate((opts.adjustments.rotation * Math.PI) / 180);
@@ -1184,7 +1737,7 @@ function renderStoryCard(
     else { dW = W; dH = W / aspect; }
     ctx.drawImage(opts.image, -dW / 2, -dH / 2, dW, dH);
     ctx.restore();
-  } else {
+  } else if (!isGoa) {
     ctx.fillStyle = T.bg;
     ctx.fillRect(0, 0, W, H * 0.65);
     ctx.fillStyle = gold;
@@ -1195,16 +1748,16 @@ function renderStoryCard(
 
   // Top gradient overlay
   const topGrad = ctx.createLinearGradient(0, 0, 0, 380);
-  topGrad.addColorStop(0, 'rgba(5, 13, 31, 0.97)');
-  topGrad.addColorStop(1, 'rgba(5, 13, 31, 0)');
+  topGrad.addColorStop(0, isGoa ? 'rgba(4, 24, 12, 0.95)' : 'rgba(5, 13, 31, 0.97)');
+  topGrad.addColorStop(1, isGoa ? 'rgba(4, 24, 12, 0)' : 'rgba(5, 13, 31, 0)');
   ctx.fillStyle = topGrad;
   ctx.fillRect(0, 0, W, 380);
 
   // Bottom gradient overlay
   const bottomGrad = ctx.createLinearGradient(0, H * 0.52, 0, H);
-  bottomGrad.addColorStop(0, 'rgba(5, 13, 31, 0)');
-  bottomGrad.addColorStop(0.3, 'rgba(5, 13, 31, 0.88)');
-  bottomGrad.addColorStop(1, 'rgba(5, 13, 31, 0.99)');
+  bottomGrad.addColorStop(0, isGoa ? 'rgba(4, 24, 12, 0)' : 'rgba(5, 13, 31, 0)');
+  bottomGrad.addColorStop(0.3, isGoa ? 'rgba(4, 24, 12, 0.88)' : 'rgba(5, 13, 31, 0.88)');
+  bottomGrad.addColorStop(1, isGoa ? 'rgba(4, 24, 12, 0.99)' : 'rgba(5, 13, 31, 0.99)');
   ctx.fillStyle = bottomGrad;
   ctx.fillRect(0, H * 0.52, W, H - H * 0.52);
 
@@ -1388,7 +1941,7 @@ function drawPlaceholderBackground(
   offsetX = 0, offsetY = 0,
   T?: ThemeColors
 ) {
-  const theme = T ?? THEMES['neon-shore'];
+  const theme = T ?? THEMES['hhgoa'];
   ctx.save();
   ctx.translate(offsetX, offsetY);
   ctx.fillStyle = theme.bgDeep;

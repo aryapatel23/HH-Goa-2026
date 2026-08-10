@@ -9,7 +9,7 @@ import type {
   StickerId,
   Theme
 } from '../types';
-import { drawCanvas } from '../utils/canvasRenderer';
+import { drawCanvas, onGoaBgReady } from '../utils/canvasRenderer';
 import { encodeVerificationUrl } from '../utils/verifier';
 import { playSuccessSound } from '../utils/audio';
 import { Download, Share2, Sparkles, Move, Maximize2, ChevronRight, Copy, Check, ExternalLink } from 'lucide-react';
@@ -17,10 +17,12 @@ import { THEMES } from '../types';
 import confetti from 'canvas-confetti';
 
 const CARD_STYLE_OPTIONS: { id: IDCardStyleId; label: string; color: string }[] = [
-  { id: 'classic-dark',    label: 'Classic',   color: '#ffcc00' },
-  { id: 'editorial-light', label: 'Editorial', color: '#1a4a2e' },
-  { id: 'terminal-hacker', label: 'Terminal',  color: '#00ff88' },
-  { id: 'magazine-cover',  label: 'Magazine',  color: '#ff4d00' },
+  { id: 'goa-resort',      label: '🌴 Resort',   color: '#ffe500' },
+  { id: 'sunset-beach',    label: '🌅 Sunset',   color: '#ff6b1a' },
+  { id: 'classic-dark',    label: 'Classic',     color: '#ffcc00' },
+  { id: 'editorial-light', label: 'Editorial',   color: '#1a4a2e' },
+  { id: 'terminal-hacker', label: 'Terminal',    color: '#00ff88' },
+  { id: 'magazine-cover',  label: 'Magazine',    color: '#ff4d00' },
 ];
 
 interface PreviewCanvasProps {
@@ -60,6 +62,12 @@ export const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [copied, setCopied] = useState(false);
+  const [goaBgTick, setGoaBgTick] = useState(0);
+
+  // Redraw once realistic Goa beach images finish loading
+  useEffect(() => {
+    onGoaBgReady(() => setGoaBgTick(t => t + 1));
+  }, []);
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -68,7 +76,7 @@ export const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
         cardStyle, cardData, cornerStyle, selectedStickers, theme,
       });
     }
-  }, [mode, cornerStyle, image, adjustments, frameTemplate, cardStyle, cardData, selectedStickers, theme]);
+  }, [mode, cornerStyle, image, adjustments, frameTemplate, cardStyle, cardData, selectedStickers, theme, goaBgTick]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!image) return;

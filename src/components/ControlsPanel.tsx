@@ -49,10 +49,12 @@ const FRAME_TEMPLATES: { id: FrameTemplateId; label: string; color: string }[] =
 ];
 
 const CARD_STYLES: { id: IDCardStyleId; label: string; color: string; desc: string }[] = [
-  { id: 'classic-dark',     label: 'Classic Dark',      color: '#ffcc00', desc: 'Dark navy + gold' },
-  { id: 'editorial-light',  label: 'Editorial Light',   color: '#1a4a2e', desc: 'Cream + bold serif' },
-  { id: 'terminal-hacker',  label: 'Terminal Hacker',   color: '#00ff88', desc: 'Black + neon green' },
-  { id: 'magazine-cover',   label: 'Magazine Cover',    color: '#ff4d00', desc: 'Full photo + overlay' },
+  { id: 'goa-resort',      label: '🌴 Goa Resort',       color: '#ffe500', desc: 'Forest green + yellow' },
+  { id: 'sunset-beach',    label: '🌅 Sunset Beach',      color: '#ff6b1a', desc: 'Warm sunset gradient' },
+  { id: 'classic-dark',    label: 'Classic Dark',         color: '#ffcc00', desc: 'Dark navy + gold' },
+  { id: 'editorial-light', label: 'Editorial Light',      color: '#1a4a2e', desc: 'Cream + bold serif' },
+  { id: 'terminal-hacker', label: 'Terminal Hacker',      color: '#00ff88', desc: 'Black + neon green' },
+  { id: 'magazine-cover',  label: 'Magazine Cover',       color: '#ff4d00', desc: 'Full photo + overlay' },
 ];
 
 const ACCENT_COLORS = [
