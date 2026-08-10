@@ -54,10 +54,10 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   const isSquare = cornerStyle === 'square';
 
   const defaultCaption = mode === 'pfp'
-    ? `Just generated my official @HHGoa2026 PFP! 🌴⚡ Excited for Hacker House Goa by 2:47 PM Studio (28-31 Oct 2026)! #FrameInGoa ${cloudinaryUrl || ''}`
+    ? `Just made my official HH Goa 2026 PFP! 🌴⚡ Excited for Hacker House Goa by 2:47 PM Studio (28–31 Oct 2026)! #FrameInGoa ${cloudinaryUrl || ''}`.trim()
     : mode === 'story'
-    ? `Here's my Hacker House Goa 2026 story card! 🌊🔥 28-31 Oct, Goa, India! #FrameInGoa ${cloudinaryUrl || ''}`
-    : `Check out my official @HHGoa2026 Builder Pass! 🌊💻 Ready to hack alongside top builders in Goa! #FrameInGoa ${cloudinaryUrl || ''}`;
+    ? `Here's my Hacker House Goa 2026 story card! 🌊🔥 28–31 Oct, Goa, India! #FrameInGoa ${cloudinaryUrl || ''}`.trim()
+    : `Check out my official HH Goa 2026 Builder Pass! 🌊💻 Ready to hack in Goa! #FrameInGoa ${cloudinaryUrl || ''}`.trim();
 
   const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(defaultCaption)}`;
 
@@ -112,9 +112,9 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       const response = await fetch(imageDataUrl);
       const blob = await response.blob();
       const file = new File([blob], 'hhgoa2026-builder.png', { type: 'image/png' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
         await navigator.share({ title: 'HH Goa 2026 Builder Card', text: defaultCaption, files: [file] });
-        confetti({ particleCount: 80, spread: 70, colors: ['#ffcc00', '#ff4d00', '#00d4c8'] });
+        confetti({ particleCount: 80, spread: 70, colors: ['#F5D505', '#F0127A', '#FBF7E9'] });
         return;
       }
     } catch {

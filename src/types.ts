@@ -15,8 +15,8 @@ export interface ThemeColors {
 
 export const THEMES: Record<Theme, ThemeColors> = {
   'hhgoa': {
-    bg: '#0d4a1a', bgDeep: '#083512', bgCard: 'rgba(10,58,20,0.92)',
-    primary: '#ffe500', coral: '#ff007f', teal: '#ffffff',
+    bg: '#0B3D2A', bgDeep: '#06231A', bgCard: 'rgba(16,73,47,0.92)',
+    primary: '#F5D505', coral: '#F0127A', teal: '#FBF7E9',
     label: 'HH GOA', emoji: '🌴',
   },
   'neon-shore': {

@@ -1,0 +1,53 @@
+/* HH Goa 2026 — official brand tokens (matches hhgoa.com) */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700;800&family=VT323&display=swap');
+
+:root {
+  --hh-green-900: #0B3D2A;
+  --hh-green-800: #10492F;
+  --hh-green-700: #14562F;
+  --hh-yellow: #F5D505;
+  --hh-yellow-glow: #FFEA70;
+  --hh-pink: #F0127A;
+  --hh-cream: #FBF7E9;
+  --hh-ink: #06231A;
+
+  /* Map legacy app vars → HH brand (default / hhgoa theme) */
+  --bg-dark: var(--hh-green-900);
+  --bg-emerald: var(--hh-green-800);
+  --bg-card: rgba(16, 73, 47, 0.92);
+  --bg-card-hover: rgba(20, 86, 47, 0.97);
+
+  --border-glow: rgba(245, 213, 5, 0.4);
+  --border-light: rgba(251, 247, 233, 0.12);
+
+  --accent-yellow: var(--hh-yellow);
+  --accent-pink: var(--hh-pink);
+  --accent-cyan: var(--hh-cream);
+  --accent-purple: #7c3aed;
+  --accent-sunset: #ff6b1a;
+  --accent-gold: var(--hh-yellow);
+  --accent-green: #7fff9a;
+
+  --text-main: var(--hh-cream);
+  --text-yellow: var(--hh-yellow);
+  --text-muted: #a3e635;
+  --text-dim: #86efac;
+
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-heading: 'Inter', sans-serif;
+  --font-serif: 'Fraunces', 'Bodoni Moda', serif;
+  --font-pixel: 'VT323', monospace;
+
+  --radius-sharp: 0px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+
+  --shadow-emerald: 0 0 30px rgba(245, 213, 5, 0.2);
+  --shadow-yellow: 0 0 25px rgba(245, 213, 5, 0.35);
+  --shadow-pink: 0 0 25px rgba(240, 18, 122, 0.35);
+
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

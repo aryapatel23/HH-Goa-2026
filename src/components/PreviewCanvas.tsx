@@ -17,7 +17,7 @@ import { THEMES } from '../types';
 import confetti from 'canvas-confetti';
 
 const CARD_STYLE_OPTIONS: { id: IDCardStyleId; label: string; color: string }[] = [
-  { id: 'goa-resort',      label: '🌴 Resort',   color: '#ffe500' },
+  { id: 'goa-resort',      label: '🌴 Passport', color: '#ffe500' },
   { id: 'sunset-beach',    label: '🌅 Sunset',   color: '#ff6b1a' },
   { id: 'classic-dark',    label: 'Classic',     color: '#ffcc00' },
   { id: 'editorial-light', label: 'Editorial',   color: '#1a4a2e' },
@@ -63,6 +63,7 @@ export const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [copied, setCopied] = useState(false);
   const [goaBgTick, setGoaBgTick] = useState(0);
+  const pinchRef = useRef<{ dist: number; zoom: number } | null>(null);
 
   // Redraw once realistic Goa beach images finish loading
   useEffect(() => {
@@ -91,31 +92,58 @@ export const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!image) return;
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      pinchRef.current = { dist: Math.hypot(dx, dy), zoom: adjustments.zoom };
+      setIsDragging(false);
+      return;
+    }
     const t = e.touches[0];
     setIsDragging(true);
     setDragStart({ x: t.clientX - adjustments.panX, y: t.clientY - adjustments.panY });
   };
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || !image) return;
+    if (!image) return;
+    if (e.touches.length === 2 && pinchRef.current) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      const scale = dist / Math.max(1, pinchRef.current.dist);
+      const next = Math.min(3, Math.max(0.5, Math.round(pinchRef.current.zoom * scale * 100) / 100));
+      setAdjustments(prev => ({ ...prev, zoom: next }));
+      return;
+    }
+    if (!isDragging) return;
     e.preventDefault();
     const t = e.touches[0];
     setAdjustments(prev => ({ ...prev, panX: Math.round(t.clientX - dragStart.x), panY: Math.round(t.clientY - dragStart.y) }));
   };
-  const handleTouchEnd = () => setIsDragging(false);
+  const handleTouchEnd = () => {
+    pinchRef.current = null;
+    setIsDragging(false);
+  };
 
   const handleDownload = () => {
     if (!canvasRef.current) return;
     playSuccessSound();
-    const T = THEMES[theme ?? 'neon-shore'];
+    const T = THEMES[theme ?? 'hhgoa'];
     confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 }, colors: [T.primary, T.coral, T.teal] });
-    const dataUrl = canvasRef.current.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.download = `hhgoa2026-${mode === 'pfp' ? 'pfp' : mode === 'story' ? 'story' : 'card'}-${Date.now()}.png`;
-    a.href = dataUrl;
-    a.click();
 
-    // Create thumbnail for the gallery (max 220px, JPEG compressed)
-    if (onDownloaded) {
+    canvasRef.current.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.download = `hhgoa2026-${mode === 'pfp' ? 'pfp' : mode === 'story' ? 'story' : 'card'}-${Date.now()}.png`;
+      a.href = url;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }, 'image/png');
+
+    if (onDownloaded && canvasRef.current) {
       try {
         const src = canvasRef.current;
         const thumb = document.createElement('canvas');
@@ -128,26 +156,41 @@ export const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
           tc.drawImage(src, 0, 0, thumb.width, thumb.height);
           onDownloaded(thumb.toDataURL('image/jpeg', 0.75), { name: cardData.fullName, mode, cardStyle });
         }
-      } catch { /* ignore quota errors */ }
+      } catch { /* ignore */ }
     }
   };
+
+  const shareCaption =
+    mode === 'pfp'
+      ? `Just made my official HH Goa 2026 PFP! 🌴⚡ Ready for 28–31 Oct in Goa. #FrameInGoa`
+      : mode === 'story'
+      ? `My Hacker House Goa 2026 story card is live 🌊🔥 #FrameInGoa`
+      : `Check my official HH Goa 2026 Builder ID 🌊💻 #FrameInGoa`;
 
   const handleShareClick = async () => {
     if (!canvasRef.current) return;
     playSuccessSound();
     const dataUrl = canvasRef.current.toDataURL('image/png');
-    if (navigator.canShare) {
-      try {
-        const blob = await (await fetch(dataUrl)).blob();
-        const file = new File([blob], 'hhgoa2026.png', { type: 'image/png' });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ title: 'HH Goa 2026', text: '#FrameInGoa 🌴⚡', files: [file] });
-          confetti({ particleCount: 80, spread: 60, colors: ['#ffcc00', '#ff4d00', '#00d4c8'] });
-          return;
-        }
-      } catch { /* fall through */ }
-    }
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], 'hhgoa2026.png', { type: 'image/png' });
+      if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+        await navigator.share({ title: 'HH Goa 2026', text: shareCaption, files: [file] });
+        confetti({ particleCount: 80, spread: 60, colors: ['#F5D505', '#F0127A', '#FBF7E9'] });
+        return;
+      }
+    } catch { /* fall through to modal */ }
     onShareRequested(dataUrl);
+  };
+
+  const handleWheelZoom = (e: React.WheelEvent) => {
+    if (!image) return;
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.06 : 0.06;
+    setAdjustments(prev => ({
+      ...prev,
+      zoom: Math.min(3, Math.max(0.5, Math.round((prev.zoom + delta) * 100) / 100)),
+    }));
   };
 
   const handleCopyLink = async () => {
@@ -190,7 +233,7 @@ export const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
 
       {/* Card Style Switcher — only in ID card / Story mode */}
       {isCard && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.4rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem' }}>
           {CARD_STYLE_OPTIONS.map(s => {
             const on = cardStyle === s.id;
             return (
@@ -220,12 +263,13 @@ export const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
         onMouseDown={handleMouseDown} onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
         onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
+        onWheel={handleWheelZoom}
         style={{
           position: 'relative',
           width: '100%',
           display: 'flex', justifyContent: 'center', alignItems: 'center',
-          background: '#020810',
-          border: '1px solid rgba(255,77,0,0.3)',
+          background: 'var(--hh-ink)',
+          border: '2px solid rgba(245, 213, 5, 0.35)',
           borderRadius: isSquare ? '0' : '10px',
           padding: '0.8rem',
           cursor: image ? (isDragging ? 'grabbing' : 'grab') : 'default',
@@ -236,12 +280,12 @@ export const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
         {image && (
           <div style={{
             position: 'absolute', top: 8, left: 8, zIndex: 10, pointerEvents: 'none',
-            background: 'rgba(5,13,31,0.88)', border: '1px solid var(--accent-yellow)',
+            background: 'rgba(11, 61, 42, 0.92)', border: '1px solid var(--hh-yellow)',
             padding: '0.25rem 0.5rem', borderRadius: '4px',
-            fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: 'var(--accent-yellow)',
+            fontSize: '0.65rem', fontFamily: 'var(--font-mono)', color: 'var(--hh-yellow)',
             display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 700,
           }}>
-            <Move size={11} /> Drag to reposition
+            <Move size={11} /> Drag · scroll to zoom · {adjustments.zoom.toFixed(2)}x
           </div>
         )}
         <canvas ref={canvasRef} style={{
@@ -252,12 +296,12 @@ export const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
         }} />
       </div>
 
-      {/* Download + Share — side by side */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
-        <button onClick={handleDownload} className={`btn btn-primary ${isSquare ? 'btn-square' : 'btn-rounded'}`}>
+      {/* Download + Share — ticket CTAs */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.25rem' }}>
+        <button type="button" onClick={handleDownload} className="btn btn-ticket" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontSize: '0.8rem' }}>
           <Download size={16} /> Download
         </button>
-        <button onClick={handleShareClick} className={`btn btn-sunset ${isSquare ? 'btn-square' : 'btn-rounded'}`}>
+        <button type="button" onClick={handleShareClick} className="btn btn-ticket" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontSize: '0.8rem' }}>
           <Share2 size={16} /> Share to X
         </button>
       </div>

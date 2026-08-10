@@ -20,6 +20,8 @@ import { RecentCards } from './components/RecentCards';
 import type { RecentCard } from './components/RecentCards';
 import { generateHackerId } from './utils/verifier';
 import { Flame, ShieldCheck, Zap } from 'lucide-react';
+import { FooterBorder } from './components/decor/FooterBorder';
+import { LivingGoaBg } from './components/LivingGoaBg';
 
 type MobilePanel = 'upload' | 'customize' | 'preview';
 
@@ -160,6 +162,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="app-container">
+      <LivingGoaBg />
       <Header
         mode={mode}
         setMode={setMode}
@@ -280,55 +283,59 @@ export const App: React.FC = () => {
 
       {/* Footer */}
       <footer
-        className={`glass-panel ${isSquare ? 'square-corners' : 'rounded-corners'}`}
+        className={`glass-panel ${isSquare ? 'square-corners' : 'rounded-corners'} site-footer-panel`}
         style={{
-          padding: '1rem 1.5rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '0.75rem',
+          padding: '1.1rem 1.25rem 0.5rem',
           fontSize: '0.75rem',
           color: 'var(--text-muted)',
           marginTop: '0.5rem',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <Zap size={14} color="var(--accent-yellow)" />
-          <span style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
-            2:47 PM STUDIO × HACKER HOUSE GOA 2026
-          </span>
-          <span style={{ opacity: 0.45 }}>·</span>
-          <span style={{ fontStyle: 'italic', opacity: 0.65 }}>Less Noise. More Signal.</span>
-        </div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem',
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Zap size={14} color="var(--hh-yellow)" />
+              <span style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.05em', color: 'var(--hh-cream)' }}>
+                2:47 PM STUDIO × HACKER HOUSE GOA 2026
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
+              <a href="https://x.com/247pmstudio" target="_blank" rel="noreferrer" style={{ color: 'var(--hh-yellow)', textDecoration: 'none' }}>X · @247PMSTUDIO</a>
+              <a href="https://t.me" target="_blank" rel="noreferrer" style={{ color: 'var(--hh-yellow)', textDecoration: 'none' }}>Telegram</a>
+              <a href="mailto:hello@247pm.studio" style={{ color: 'var(--hh-yellow)', textDecoration: 'none' }}>Email</a>
+            </div>
+          </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <a
-            href="https://hhgoa.com"
-            target="_blank"
-            rel="noreferrer"
-            style={{ color: 'var(--accent-yellow)', textDecoration: 'none', fontFamily: 'var(--font-mono)', fontWeight: 700, letterSpacing: '0.04em' }}
-          >
-            hhgoa.com ↗
-          </a>
-          <button
-            onClick={() => { setVerifyQuery('HH-GOA-2026-A89F-8842'); setVerifyModalOpen(true); }}
-            style={{
-              background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
-              fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem',
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
-            <ShieldCheck size={13} color="var(--text-muted)" /> Verify Pass
-          </button>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-            <Flame size={13} color="var(--accent-pink)" />
-            <a href="https://x.com/search?q=%23FrameInGoa" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none', fontFamily: 'var(--font-mono)' }}>
-              #FrameInGoa
-            </a>
-          </span>
-          <span style={{ opacity: 0.5, fontFamily: 'var(--font-mono)' }}>GOA, INDIA · 28–31 OCT 2026</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
+            <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <a href="https://hhgoa.com" target="_blank" rel="noreferrer" style={{ color: 'var(--hh-cream)', textDecoration: 'none' }}>BRAND KIT</a>
+              <a href="https://hhgoa.com" target="_blank" rel="noreferrer" style={{ color: 'var(--hh-cream)', textDecoration: 'none' }}>TERMS &amp; CONDITIONS</a>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setVerifyQuery(''); setVerifyModalOpen(true); }}
+              style={{
+                background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
+                fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.3rem',
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
+              <ShieldCheck size={13} /> Verify Pass
+            </button>
+            <span style={{ opacity: 0.65 }}>© 2026 HH-GOA. ALL RIGHTS RESERVED.</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <Flame size={12} color="var(--hh-pink)" />
+              <a href="https://x.com/search?q=%23FrameInGoa" target="_blank" rel="noreferrer" style={{ color: 'var(--hh-pink)', textDecoration: 'none' }}>#FrameInGoa</a>
+            </span>
+          </div>
         </div>
+        <FooterBorder />
       </footer>
 
       <ShareModal
